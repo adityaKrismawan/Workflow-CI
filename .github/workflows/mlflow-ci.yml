@@ -1,0 +1,49 @@
+name: MLflow CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  train-and-upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: '3.11'
+          activate-environment: salary-regression-ci
+
+      - name: Install project dependencies
+        run: |
+          conda env update -n salary-regression-ci -f MLProject/conda.yaml
+          conda run -n salary-regression-ci python -m pip install --upgrade pip
+
+      - name: Run MLflow project training
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///MLProject/mlruns/mlflow.db
+        run: |
+          mkdir -p MLProject/mlruns MLProject/artifacts
+          conda run -n salary-regression-ci mlflow run MLProject --env-manager conda
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: salary-regression-artifacts
+          path: |
+            MLProject/artifacts/
+            MLProject/mlruns/

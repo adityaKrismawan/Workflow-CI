@@ -1,0 +1,23 @@
+# Virtual environment
+.venv/
+venv/
+
+# MLflow / local run outputs
+mlruns/
+MLProject/mlruns/
+MLProject/artifacts/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Jupyter / editor
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
