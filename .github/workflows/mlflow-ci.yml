@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Stage 8 - Build and push Docker image
-          if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
         env:
           IMAGE_NAME: ${{ env.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
           RUN_ID: ${{ steps.mlflow_run.outputs.RUN_ID }}
