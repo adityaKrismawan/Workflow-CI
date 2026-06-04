@@ -15,6 +15,7 @@ ROOT_DIR = Path(__file__).resolve().parent
 DATA_PATH = ROOT_DIR / "Salary_Data_Preprocess.csv"
 ARTIFACT_DIR = ROOT_DIR / "artifacts"
 ARTIFACT_DIR.mkdir(exist_ok=True)
+RUN_ID_FILE = ARTIFACT_DIR / "run_id.txt"
 
 os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -100,6 +101,8 @@ def main() -> None:
     )
 
     with mlflow.start_run(run_name="baseline_random_forest"):
+        run_id = mlflow.active_run().info.run_id
+        RUN_ID_FILE.write_text(run_id, encoding="utf-8")
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
