@@ -33,6 +33,10 @@ TRACKING_DB = TRACKING_URI / "mlflow.db"
 def configure_tracking_uri() -> tuple[str, Path]:
     explicit_uri = os.getenv("MLFLOW_TRACKING_URI")
     if explicit_uri:
+        if explicit_uri.startswith("sqlite:///MLProject/"):
+            relative_db = explicit_uri.replace("sqlite:///", "", 1)
+            absolute_db = (ROOT_DIR / relative_db).resolve()
+            return f"sqlite:///{absolute_db.as_posix()}", TRACKING_URI
         return explicit_uri, TRACKING_URI
 
     repo_owner = os.getenv("DAGSHUB_REPO_OWNER")
@@ -83,7 +87,13 @@ def main() -> None:
 
     tracking_uri, tracking_root = configure_tracking_uri()
     mlflow.set_tracking_uri(tracking_uri)
-    mlflow.set_experiment("Salary Regression Baseline")
+
+    project_run_id = os.getenv("MLFLOW_RUN_ID")
+    should_end_run = False
+    if project_run_id is None:
+        mlflow.set_experiment("Salary Regression Baseline")
+        mlflow.start_run(run_name="baseline_random_forest")
+        should_end_run = True
 
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["Salary"])
@@ -100,8 +110,8 @@ def main() -> None:
         n_jobs=-1,
     )
 
-    with mlflow.start_run(run_name="baseline_random_forest"):
-        run_id = mlflow.active_run().info.run_id
+    try:
+        run_id = project_run_id or mlflow.active_run().info.run_id
         RUN_ID_FILE.write_text(run_id, encoding="utf-8")
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
@@ -146,6 +156,9 @@ def main() -> None:
         print(f"MAE: {mae:.4f}")
         print(f"R2: {r2:.4f}")
         print(f"MLflow UI: {tracking_uri}")
+    finally:
+        if should_end_run:
+            mlflow.end_run()
 
 
 if __name__ == "__main__":

@@ -37,9 +37,9 @@ jobs:
           conda run -n salary-regression-ci python -m pip install --upgrade pip
 
       - name: Stage 4 - Train model with MLflow
-        env:
-          MLFLOW_TRACKING_URI: sqlite:///MLProject/mlruns/mlflow.db
         run: |
+          export MLFLOW_TRACKING_URI="sqlite:///${GITHUB_WORKSPACE}/MLProject/mlruns/mlflow.db"
+          export MLFLOW_DISABLE_ENV_MANAGER_CONDA_WARNING="TRUE"
           mkdir -p MLProject/mlruns MLProject/artifacts
           conda run -n salary-regression-ci mlflow run MLProject --env-manager conda
 
