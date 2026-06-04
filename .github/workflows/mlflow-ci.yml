@@ -76,4 +76,4 @@ jobs:
           -m "runs:/${RUN_ID}/model" 
           -n "$IMAGE_NAME"
           
-          docker push "$IMAGE_NAME"
+          docker push "$IMAGE_NAME" 
