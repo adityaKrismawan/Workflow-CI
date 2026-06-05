@@ -17,10 +17,10 @@ jobs:
         uses: actions/checkout@v4
 
       # Stage 2
-      - name: Set up Python 3.12.7
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.7"
+          python-version: "3.12"
 
       # Stage 3
       - name: Check Environment
@@ -29,29 +29,24 @@ jobs:
           pip --version
 
       # Stage 4
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           pip install --upgrade pip
-
-          pip install mlflow
-          pip install pandas
-          pip install numpy
-          pip install scikit-learn
-          pip install matplotlib
-          pip install seaborn
-          pip install joblib
+          pip install mlflow pandas numpy scikit-learn matplotlib seaborn joblib
 
       # Stage 5
       - name: Run Model Training
         env:
-          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/MLProject/mlruns/mlflow.db
+          MLFLOW_TRACKING_URI: file://${{ github.workspace }}/MLProject/mlruns
         run: |
+          mkdir -p MLProject/mlruns
           python MLProject/modelling.py
 
       # Stage 6
-      - name: Get latest MLflow run_id
+      - name: Get Latest MLflow Run ID
         id: runid
         run: |
+          cat MLProject/artifacts/run_id.txt
           echo "RUN_ID=$(cat MLProject/artifacts/run_id.txt)" >> $GITHUB_OUTPUT
 
       # Stage 7
@@ -70,17 +65,17 @@ jobs:
 
       # Stage 9
       - name: Build Docker Model
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         env:
-          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/MLProject/mlruns/mlflow.db
+          MLFLOW_TRACKING_URI: file://${{ github.workspace }}/MLProject/mlruns
         run: |
+          echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
+
           mlflow models build-docker \
             -m "runs:/${{ steps.runid.outputs.RUN_ID }}/model" \
             -n salary-regression-ci
 
       # Stage 10
-      - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -88,13 +83,11 @@ jobs:
 
       # Stage 11
       - name: Tag Docker Image
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         run: |
           docker tag salary-regression-ci \
           ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
 
       # Stage 12
       - name: Push Docker Image
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
