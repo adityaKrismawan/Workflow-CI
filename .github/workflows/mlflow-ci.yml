@@ -42,9 +42,11 @@ jobs:
           pip install joblib
 
       # Stage 5
-      - name: Run MLflow Project
+      - name: Run Model Training
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/MLProject/mlruns/mlflow.db
         run: |
-          mlflow run MLProject
+          python MLProject/modelling.py
 
       # Stage 6
       - name: Get latest MLflow run_id
@@ -68,6 +70,9 @@ jobs:
 
       # Stage 9
       - name: Build Docker Model
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/MLProject/mlruns/mlflow.db
         run: |
           mlflow models build-docker \
             -m "runs:/${{ steps.runid.outputs.RUN_ID }}/model" \
@@ -75,6 +80,7 @@ jobs:
 
       # Stage 10
       - name: Log in to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -82,11 +88,13 @@ jobs:
 
       # Stage 11
       - name: Tag Docker Image
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         run: |
           docker tag salary-regression-ci \
           ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
 
       # Stage 12
       - name: Push Docker Image
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
