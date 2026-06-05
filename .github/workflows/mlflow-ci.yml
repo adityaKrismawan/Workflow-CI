@@ -37,9 +37,8 @@ jobs:
       # Stage 5
       - name: Run Model Training
         env:
-          MLFLOW_TRACKING_URI: file://${{ github.workspace }}/MLProject/mlruns
+          MLFLOW_TRACKING_URI: sqlite:///mlflow.db
         run: |
-          mkdir -p MLProject/mlruns
           python MLProject/modelling.py
 
       # Stage 6
@@ -66,7 +65,8 @@ jobs:
       # Stage 9
       - name: Build Docker Model
         env:
-          MLFLOW_TRACKING_URI: file://${{ github.workspace }}/MLProject/mlruns
+          MLFLOW_TRACKING_URI: sqlite:///mlflow.db
+          MLFLOW_ALLOW_FILE_STORE: "true"
         run: |
           echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
 
