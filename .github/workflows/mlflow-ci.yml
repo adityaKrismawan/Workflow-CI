@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install mlflow pandas numpy scikit-learn matplotlib seaborn joblib
+          pip install mlflow pandas numpy scikit-learn matplotlib seaborn joblib dagshub
 
       # Stage 5
       - name: Run Model Training
