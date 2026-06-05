@@ -3,6 +3,7 @@ import sys
 import joblib
 import matplotlib.pyplot as plt
 import mlflow
+import mlflow.sklearn
 import dagshub
 import numpy as np
 import pandas as pd
@@ -133,9 +134,18 @@ def main() -> None:
             "r2": r2,
         })
 
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model"
+        )
+
         model_path = ARTIFACT_DIR / "salary_model.pkl"
         joblib.dump(model, model_path)
-        mlflow.log_artifact(str(model_path), artifact_path="model")
+
+        mlflow.log_artifact(
+            str(model_path),
+            artifact_path="backup_model"
+        )
 
         feature_plot = ARTIFACT_DIR / "feature_importance.png"
         plot_feature_importance(model, list(X.columns), feature_plot)
