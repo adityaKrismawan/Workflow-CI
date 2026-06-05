@@ -5,73 +5,88 @@ on:
     branches:
       - main
       - master
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  train-and-upload:
+  train-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-    permissions:
-      contents: read
-    defaults:
-      run:
-        shell: bash
 
     steps:
-      - name: Stage 1 - Checkout repository
+      # Stage 1
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Stage 2 - Setup Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+      # Stage 2
+      - name: Set up Python 3.12.7
+        uses: actions/setup-python@v5
         with:
-          auto-update-conda: true
-          python-version: '3.11'
-          activate-environment: salary-regression-ci
+          python-version: "3.12.7"
 
-      - name: Stage 3 - Install dependencies
+      # Stage 3
+      - name: Check Environment
         run: |
-          conda env update -n salary-regression-ci -f MLProject/conda.yaml
-          conda run -n salary-regression-ci python -m pip install --upgrade pip
+          python --version
+          pip --version
 
-      - name: Stage 4 - Train model with MLflow
+      # Stage 4
+      - name: Install dependencies
         run: |
-          export MLFLOW_TRACKING_URI="sqlite:///${GITHUB_WORKSPACE}/MLProject/mlruns/mlflow.db"
-          export MLFLOW_DISABLE_ENV_MANAGER_CONDA_WARNING="TRUE"
-          mkdir -p MLProject/mlruns MLProject/artifacts
-          conda run -n salary-regression-ci mlflow run MLProject --env-manager conda
+          pip install --upgrade pip
 
-      - name: Stage 5 - Upload artifacts
+          pip install mlflow
+          pip install pandas
+          pip install numpy
+          pip install scikit-learn
+          pip install matplotlib
+          pip install seaborn
+          pip install joblib
+
+      # Stage 5
+      - name: Run MLflow Project
+        run: |
+          mlflow run MLProject
+
+      # Stage 6
+      - name: Get latest MLflow run_id
+        id: runid
+        run: |
+          echo "RUN_ID=$(cat MLProject/artifacts/run_id.txt)" >> $GITHUB_OUTPUT
+
+      # Stage 7
+      - name: Upload Artifacts to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: salary-regression-artifacts
           path: |
             MLProject/artifacts/
             MLProject/mlruns/
+          retention-days: 30
 
-      - name: Stage 6 - Capture MLflow run ID
-        id: mlflow_run
+      # Stage 8
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Stage 9
+      - name: Build Docker Model
         run: |
-          echo "RUN_ID=$(tr -d '\n' < MLProject/artifacts/run_id.txt)" >> "$GITHUB_OUTPUT"
+          mlflow models build-docker \
+            -m "runs:/${{ steps.runid.outputs.RUN_ID }}/model" \
+            -n salary-regression-ci
 
-      - name: Stage 7 - Login to Docker Hub
-        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
+      # Stage 10
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Stage 8 - Build and push Docker image
-        if: ${{ env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != '' }}
-        env:
-          IMAGE_NAME: ${{ env.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
-          RUN_ID: ${{ steps.mlflow_run.outputs.RUN_ID }}
-          MLFLOW_TRACKING_URI: "sqlite:///${{ github.workspace }}/MLProject/mlruns/mlflow.db"
+      # Stage 11
+      - name: Tag Docker Image
         run: |
-          echo "Using RUN_ID=$RUN_ID"
-          
-          conda run -n salary-regression-ci mlflow models build-docker -m "runs:/${RUN_ID}/model" -n "$IMAGE_NAME"
-          
-          docker push "$IMAGE_NAME" 
+          docker tag salary-regression-ci \
+          ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
+
+      # Stage 12
+      - name: Push Docker Image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
