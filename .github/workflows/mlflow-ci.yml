@@ -1,108 +1,108 @@
 name: MLflow CI
 
 on:
-push:
-branches:
-- main
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 jobs:
-train-and-deploy:
-runs-on: ubuntu-latest
+  train-and-deploy:
+    runs-on: ubuntu-latest
 
-steps:
+    steps:
 
-  - name: Checkout Repository
-    uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  - name: Setup Python
-    uses: actions/setup-python@v5
-    with:
-      python-version: "3.11"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-  - name: Setup Miniconda
-    uses: conda-incubator/setup-miniconda@v3
-    with:
-      python-version: "3.11"
-      auto-activate-base: true
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          auto-activate-base: true
 
-  - name: Install Dependencies
-    shell: bash -l {0}
-    run: |
-      pip install --upgrade pip
+      - name: Install Dependencies
+        shell: bash -l {0}
+        run: |
+          pip install --upgrade pip
 
-      pip install \
-        mlflow==2.17.2 \
-        pandas \
-        numpy \
-        scikit-learn \
-        matplotlib \
-        seaborn \
-        joblib \
-        dagshub
+          pip install \
+            mlflow==2.17.2 \
+            pandas \
+            numpy \
+            scikit-learn \
+            matplotlib \
+            seaborn \
+            joblib \
+            dagshub
 
-  - name: Clean Previous MLflow Files
-    run: |
-      rm -rf mlruns
-      rm -f mlflow.db
+      - name: Clean Previous MLflow Files
+        run: |
+          rm -rf mlruns
+          rm -f mlflow.db
 
-  - name: Run Training Using MLflow Project
-    shell: bash -l {0}
-    env:
-      MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/mlflow.db
-    run: |
-      mlflow run ./MLProject
+      - name: Run Training Using MLflow Project
+        shell: bash -l {0}
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/mlflow.db
+        run: |
+          mlflow run ./MLProject
 
-  - name: Verify MLflow Artifacts
-    run: |
-      echo "===== MLmodel ====="
-      find . -name MLmodel
+      - name: Verify MLflow Artifacts
+        run: |
+          echo "===== MLmodel ====="
+          find . -name MLmodel
 
-      echo ""
-      echo "===== mlruns ====="
-      find . -type d -name model
+          echo ""
+          echo "===== mlruns ====="
+          find . -type d -name model
 
-  - name: Upload Artifacts
-    uses: actions/upload-artifact@v4
-    with:
-      name: salary-regression-artifacts
-      path: |
-        mlruns/
-        MLProject/artifacts/
-      retention-days: 30
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: salary-regression-artifacts
+          path: |
+            mlruns/
+            MLProject/artifacts/
+          retention-days: 30
 
-  - name: Setup Docker Buildx
-    uses: docker/setup-buildx-action@v3
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  - name: Build Docker Image From MLflow Model
-    shell: bash -l {0}
-    env:
-      MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/mlflow.db
-    run: |
+      - name: Build Docker Image From MLflow Model
+        shell: bash -l {0}
+        env:
+          MLFLOW_TRACKING_URI: sqlite:///${{ github.workspace }}/mlflow.db
+        run: |
 
-      MODEL_PATH=$(find . -name MLmodel | head -n 1)
+          MODEL_PATH=$(find . -name MLmodel | head -n 1)
 
-      echo "MLmodel ditemukan:"
-      echo "$MODEL_PATH"
+          echo "MLmodel ditemukan:"
+          echo "$MODEL_PATH"
 
-      mlflow models build-docker \
-        -m "$(dirname "$MODEL_PATH")" \
-        -n salary-regression-ci
+          mlflow models build-docker \
+            -m "$(dirname "$MODEL_PATH")" \
+            -n salary-regression-ci
 
-  - name: Login Docker Hub
-    uses: docker/login-action@v3
-    with:
-      username: ${{ secrets.DOCKERHUB_USERNAME }}
-      password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-  - name: Tag Docker Image
-    run: |
-      docker tag salary-regression-ci \
-      ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
+      - name: Tag Docker Image
+        run: |
+          docker tag salary-regression-ci \
+          ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
 
-  - name: Push Docker Image
-    run: |
-      docker push \
-      ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
+      - name: Push Docker Image
+        run: |
+          docker push \
+          ${{ secrets.DOCKERHUB_USERNAME }}/salary-regression-ci:latest
 

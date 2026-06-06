@@ -25,6 +25,8 @@ DATA_PATH = ROOT_DIR / "Salary_Data_Preprocess.csv"
 ARTIFACT_DIR = ROOT_DIR / "artifacts"
 ARTIFACT_DIR.mkdir(exist_ok=True)
 
+RUN_ID_FILE = ARTIFACT_DIR / "run_id.txt"
+
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 mlflow.autolog(log_models=False)
@@ -117,6 +119,12 @@ def main():
         should_end_run = False
 
     try:
+        # Capture and save run ID early
+        current_run = mlflow.active_run()
+        if current_run:
+            run_id = current_run.info.run_id
+            RUN_ID_FILE.write_text(run_id, encoding="utf-8")
+            print(f"Run ID saved: {run_id}")
 
         df = pd.read_csv(DATA_PATH)
 
