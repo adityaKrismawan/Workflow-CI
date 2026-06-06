@@ -18,7 +18,6 @@ ARTIFACT_DIR = ROOT_DIR / "artifacts"
 ARTIFACT_DIR.mkdir(exist_ok=True)
 RUN_ID_FILE = ARTIFACT_DIR / "run_id.txt"
 
-os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 mlflow.autolog(log_models=False)
 try:
@@ -26,31 +25,16 @@ try:
 except Exception:
     pass
 
-TRACKING_URI = Path(__file__).resolve().parent / "mlruns"
-TRACKING_URI.mkdir(exist_ok=True)
-TRACKING_DB = TRACKING_URI / "mlflow.db"
 
-
-def configure_tracking_uri() -> tuple[str, Path]:
+def get_tracking_uri() -> str:
+    """Get the tracking URI, preferring environment variable or using SQLite."""
     explicit_uri = os.getenv("MLFLOW_TRACKING_URI")
     if explicit_uri:
-        if explicit_uri.startswith("sqlite:///MLProject/"):
-            relative_db = explicit_uri.replace("sqlite:///", "", 1)
-            absolute_db = (ROOT_DIR / relative_db).resolve()
-            return f"sqlite:///{absolute_db.as_posix()}", TRACKING_URI
-        return explicit_uri, TRACKING_URI
-
-    repo_owner = os.getenv("DAGSHUB_REPO_OWNER")
-    repo_name = os.getenv("DAGSHUB_REPO_NAME")
-    if repo_owner and repo_name:
-        try:
-            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
-            dagshub_uri = f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow"
-            return dagshub_uri, TRACKING_URI
-        except Exception:
-            pass
-
-    return f"sqlite:///{TRACKING_DB.as_posix()}", TRACKING_URI
+        return explicit_uri
+    
+    # Default to SQLite in the parent directory
+    db_path = ROOT_DIR.parent / "mlflow.db"
+    return f"sqlite:///{db_path.as_posix()}"
 
 
 def plot_feature_importance(model: RandomForestRegressor, feature_names: list[str], path: Path) -> None:
@@ -90,16 +74,15 @@ def main() -> None:
     
     # Only configure tracking URI if not running under MLflow Project
     if project_run_id is None:
-        tracking_uri, tracking_root = configure_tracking_uri()
+        tracking_uri = get_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
         mlflow.set_experiment("Salary Regression Baseline")
         mlflow.start_run(run_name="baseline_random_forest")
         should_end_run = True
     else:
-        # Running under MLflow Project - use the default tracking
-        tracking_uri = "mlflow tracking (managed by MLflow Project)"
+        # Running under MLflow Project - use the tracking URI that's already configured
+        tracking_uri = mlflow.get_tracking_uri()
         should_end_run = False
-        # Don't start a new run - MLflow Project handles that
 
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["Salary"])
