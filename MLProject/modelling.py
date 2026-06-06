@@ -101,7 +101,17 @@ def main():
 
     mlflow.set_tracking_uri(tracking_uri)
 
-    if mlflow.active_run() is None:
+    project_run_id = os.getenv("MLFLOW_RUN_ID")
+
+    if project_run_id:
+
+        print(
+            f"Running inside MLflow Project. Run ID = {project_run_id}"
+        )
+
+        should_end_run = False
+
+    else:
 
         mlflow.set_experiment(
             "Salary Regression Baseline"
@@ -112,9 +122,6 @@ def main():
         )
 
         should_end_run = True
-
-    else:
-        should_end_run = False
 
     try:
 
