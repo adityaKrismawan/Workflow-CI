@@ -12,6 +12,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.zip
 
 # Jupyter / editor
 .ipynb_checkpoints/

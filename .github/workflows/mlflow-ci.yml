@@ -46,6 +46,7 @@ jobs:
       - name: Run Model Training
         env:
           MLFLOW_TRACKING_URI: sqlite:///mlflow.db
+        shell: bash -l {0}
         run: |
           mlflow run ./MLProject
 
