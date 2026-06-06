@@ -47,6 +47,7 @@ jobs:
         shell: bash -l {0}
         env:
           MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
+          MLFLOW_ALLOW_FILE_STORE: "true"
         run: |
           mlflow run ./MLProject
 
@@ -62,6 +63,7 @@ jobs:
         shell: bash -l {0}
         env:
           MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
+          MLFLOW_ALLOW_FILE_STORE: "true"
         run: |
           echo "=== Checking artifact locations ==="
           echo "Contents of root mlruns:"
@@ -97,6 +99,7 @@ jobs:
         shell: bash -l {0}
         env:
           MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
+          MLFLOW_ALLOW_FILE_STORE: "true"
         run: |
           echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
 
