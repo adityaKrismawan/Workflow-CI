@@ -1,5 +1,1 @@
-Docker Hub: isi dengan nama image yang ingin Anda publish, misalnya
-username/salary-regression-ci:latest
-
-Untuk build image secara manual:
-mlflow models build-docker -m runs:/<RUN_ID>/model -n username/salary-regression-ci:latest
+https://hub.docker.com/r/aditya17krismawan/salary-regression-ci
