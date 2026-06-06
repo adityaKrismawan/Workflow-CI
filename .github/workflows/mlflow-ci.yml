@@ -28,6 +28,14 @@ jobs:
           python --version
           pip --version
 
+      # Stage 3.5
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: "3.11"
+          miniconda-version: "latest"
+          auto-activate-base: true
+
       # Stage 4
       - name: Install Dependencies
         run: |
