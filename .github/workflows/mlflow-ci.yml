@@ -39,7 +39,7 @@ jobs:
         env:
           MLFLOW_TRACKING_URI: sqlite:///mlflow.db
         run: |
-          mlflow run MLProject --no-conda
+          mlflow run ./MLProject
 
       # Stage 6
       - name: Get Latest MLflow Run ID
