@@ -72,10 +72,9 @@ jobs:
 
       # Stage 9
       - name: Build Docker Model
-        env:
-          MLFLOW_TRACKING_URI: sqlite:///mlflow.db
-          MLFLOW_ALLOW_FILE_STORE: "true"
+        shell: bash -l {0}
         run: |
+          export MLFLOW_TRACKING_URI="sqlite:///$(pwd)/mlflow.db"
           echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
 
           mlflow models build-docker \
