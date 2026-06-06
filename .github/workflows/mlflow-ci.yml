@@ -46,8 +46,7 @@ jobs:
       - name: Run Model Training
         shell: bash -l {0}
         env:
-          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
-          MLFLOW_ALLOW_FILE_STORE: "true"
+          MLFLOW_TRACKING_URI: "sqlite:///${{ github.workspace }}/mlflow.db"
         run: |
           mlflow run ./MLProject
 
@@ -62,8 +61,7 @@ jobs:
       - name: Verify Artifacts Exist
         shell: bash -l {0}
         env:
-          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
-          MLFLOW_ALLOW_FILE_STORE: "true"
+          MLFLOW_TRACKING_URI: "sqlite:///${{ github.workspace }}/mlflow.db"
         run: |
           echo "=== Checking artifact locations ==="
           echo "Contents of root mlruns:"
@@ -98,8 +96,7 @@ jobs:
       - name: Build Docker Model
         shell: bash -l {0}
         env:
-          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
-          MLFLOW_ALLOW_FILE_STORE: "true"
+          MLFLOW_TRACKING_URI: "sqlite:///${{ github.workspace }}/mlflow.db"
         run: |
           echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
 
