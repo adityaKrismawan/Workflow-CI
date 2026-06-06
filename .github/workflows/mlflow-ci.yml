@@ -44,10 +44,9 @@ jobs:
 
       # Stage 5
       - name: Run Model Training
-        env:
-          MLFLOW_TRACKING_URI: sqlite:///mlflow.db
         shell: bash -l {0}
         run: |
+          export MLFLOW_TRACKING_URI="sqlite:///$(pwd)/mlflow.db"
           mlflow run ./MLProject
 
       # Stage 6

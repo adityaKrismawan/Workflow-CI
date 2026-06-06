@@ -86,15 +86,18 @@ def main() -> None:
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Preprocessed dataset not found: {DATA_PATH}")
 
-    tracking_uri, tracking_root = configure_tracking_uri()
-    mlflow.set_tracking_uri(tracking_uri)
-
     project_run_id = os.getenv("MLFLOW_RUN_ID")
-    should_end_run = False
+    
+    # Only configure tracking URI if not running under MLflow Project
     if project_run_id is None:
+        tracking_uri, tracking_root = configure_tracking_uri()
+        mlflow.set_tracking_uri(tracking_uri)
         mlflow.set_experiment("Salary Regression Baseline")
         mlflow.start_run(run_name="baseline_random_forest")
         should_end_run = True
+    else:
+        tracking_uri = mlflow.get_tracking_uri()
+        should_end_run = False
 
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["Salary"])
