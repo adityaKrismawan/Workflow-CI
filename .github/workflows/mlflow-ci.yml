@@ -45,8 +45,9 @@ jobs:
       # Stage 5
       - name: Run Model Training
         shell: bash -l {0}
+        env:
+          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
         run: |
-          export MLFLOW_TRACKING_URI="sqlite:///$(pwd)/mlflow.db"
           mlflow run ./MLProject
 
       # Stage 6
@@ -56,6 +57,26 @@ jobs:
           cat MLProject/artifacts/run_id.txt
           echo "RUN_ID=$(cat MLProject/artifacts/run_id.txt)" >> $GITHUB_OUTPUT
 
+      # Stage 6.5
+      - name: Verify Artifacts Exist
+        shell: bash -l {0}
+        env:
+          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
+        run: |
+          echo "=== Checking artifact locations ==="
+          echo "Contents of root mlruns:"
+          ls -la mlruns/ 2>/dev/null || echo "No root mlruns directory"
+          echo ""
+          echo "Contents of MLProject/mlruns:"
+          ls -la MLProject/mlruns/ 2>/dev/null || echo "No MLProject/mlruns directory"
+          echo ""
+          echo "Contents of MLProject/artifacts:"
+          ls -la MLProject/artifacts/ 2>/dev/null || echo "No MLProject/artifacts directory"
+          echo ""
+          echo "RUN_ID: ${{ steps.runid.outputs.RUN_ID }}"
+          echo "Looking for model in runs directory..."
+          find . -type f -name "MLmodel" 2>/dev/null || echo "No MLmodel file found"
+
       # Stage 7
       - name: Upload Artifacts to GitHub
         uses: actions/upload-artifact@v4
@@ -63,6 +84,7 @@ jobs:
           name: salary-regression-artifacts
           path: |
             MLProject/artifacts/
+            mlruns/
             MLProject/mlruns/
           retention-days: 30
 
@@ -73,8 +95,9 @@ jobs:
       # Stage 9
       - name: Build Docker Model
         shell: bash -l {0}
+        env:
+          MLFLOW_TRACKING_URI: "file:${{ github.workspace }}/mlruns"
         run: |
-          export MLFLOW_TRACKING_URI="sqlite:///$(pwd)/mlflow.db"
           echo "RUN_ID=${{ steps.runid.outputs.RUN_ID }}"
 
           mlflow models build-docker \

@@ -96,8 +96,10 @@ def main() -> None:
         mlflow.start_run(run_name="baseline_random_forest")
         should_end_run = True
     else:
-        tracking_uri = mlflow.get_tracking_uri()
+        # Running under MLflow Project - use the default tracking
+        tracking_uri = "mlflow tracking (managed by MLflow Project)"
         should_end_run = False
+        # Don't start a new run - MLflow Project handles that
 
     df = pd.read_csv(DATA_PATH)
     X = df.drop(columns=["Salary"])
@@ -115,8 +117,18 @@ def main() -> None:
     )
 
     try:
-        run_id = project_run_id or mlflow.active_run().info.run_id
+        # Capture run ID early
+        if project_run_id:
+            run_id = project_run_id
+        else:
+            run_id = mlflow.active_run().info.run_id if mlflow.active_run() else None
+        
+        if not run_id:
+            raise RuntimeError("Failed to get run ID from MLflow")
+        
         RUN_ID_FILE.write_text(run_id, encoding="utf-8")
+        print(f"Run ID captured: {run_id}")
+        
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
 
