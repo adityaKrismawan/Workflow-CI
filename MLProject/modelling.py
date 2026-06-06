@@ -90,6 +90,7 @@ def plot_residuals(y_true, y_pred, save_path):
     plt.close()
 
 
+
 def main():
 
     if not DATA_PATH.exists():
@@ -101,17 +102,10 @@ def main():
 
     mlflow.set_tracking_uri(tracking_uri)
 
-    project_run_id = os.getenv("MLFLOW_RUN_ID")
+    should_end_run = False
 
-    if project_run_id:
-
-        print(
-            f"Running inside MLflow Project. Run ID = {project_run_id}"
-        )
-
-        should_end_run = False
-
-    else:
+    # Hanya membuat run baru jika script dijalankan langsung
+    if mlflow.active_run() is None:
 
         mlflow.set_experiment(
             "Salary Regression Baseline"
@@ -128,7 +122,6 @@ def main():
         df = pd.read_csv(DATA_PATH)
 
         X = df.drop(columns=["Salary"])
-
         y = df["Salary"].astype(float)
 
         X_train, X_test, y_train, y_test = train_test_split(
@@ -150,20 +143,17 @@ def main():
         y_pred = model.predict(X_test)
 
         rmse = np.sqrt(
-            mean_squared_error(
-                y_test,
-                y_pred,
-            )
+            mean_squared_error(y_test, y_pred)
         )
 
         mae = mean_absolute_error(
             y_test,
-            y_pred,
+            y_pred
         )
 
         r2 = r2_score(
             y_test,
-            y_pred,
+            y_pred
         )
 
         mlflow.log_params({
@@ -185,95 +175,13 @@ def main():
             artifact_path="model"
         )
 
-        current_run = mlflow.active_run()
-
-        if current_run:
-
-            print("=" * 60)
-            print("MODEL BERHASIL DILOG")
-            print(
-                "RUN ID :",
-                current_run.info.run_id
-            )
-            print(
-                "TRACKING URI :",
-                mlflow.get_tracking_uri()
-            )
-            print("=" * 60)
-
-        model_path = ARTIFACT_DIR / "salary_model.pkl"
-
-        joblib.dump(
-            model,
-            model_path,
-        )
-
-        mlflow.log_artifact(
-            str(model_path),
-            artifact_path="backup_model"
-        )
-
-        feature_plot = (
-            ARTIFACT_DIR /
-            "feature_importance.png"
-        )
-
-        plot_feature_importance(
-            model,
-            list(X.columns),
-            feature_plot,
-        )
-
-        mlflow.log_artifact(
-            str(feature_plot),
-            artifact_path="plots"
-        )
-
-        residual_plot = (
-            ARTIFACT_DIR /
-            "residuals.png"
-        )
-
-        plot_residuals(
-            y_test.to_numpy(),
-            y_pred,
-            residual_plot,
-        )
-
-        mlflow.log_artifact(
-            str(residual_plot),
-            artifact_path="plots"
-        )
-
-        summary_path = (
-            ARTIFACT_DIR /
-            "evaluation_summary.csv"
-        )
-
-        pd.DataFrame([
-            {
-                "rmse": rmse,
-                "mae": mae,
-                "r2": r2,
-            }
-        ]).to_csv(
-            summary_path,
-            index=False,
-        )
-
-        mlflow.log_artifact(
-            str(summary_path),
-            artifact_path="reports"
-        )
-
-        print()
-        print("MLflow run completed")
-        print(f"RMSE : {rmse:.4f}")
-        print(f"MAE  : {mae:.4f}")
-        print(f"R2   : {r2:.4f}")
+        print("=" * 60)
+        print("MODEL BERHASIL DILOG")
         print(
-            f"Tracking URI : {tracking_uri}"
+            "ACTIVE RUN:",
+            mlflow.active_run().info.run_id
         )
+        print("=" * 60)
 
     finally:
 
