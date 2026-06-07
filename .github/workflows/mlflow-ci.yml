@@ -89,7 +89,7 @@ jobs:
           mlflow models build-docker \
             -m "$(dirname "$MODEL_PATH")" \
             -n salary-regression-ci \
-            --env-manager=conda
+            --env-manager=local
 
       - name: Login Docker Hub
         uses: docker/login-action@v3
