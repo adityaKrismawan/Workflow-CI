@@ -5,9 +5,9 @@ channels:
 dependencies:
   - python=3.11
   - pip
-  - setuptools
+  - setuptools>=68
   - wheel
-  - pyarrow>=4.0.0
+  - pyarrow>=14.0.0
   - pandas==2.2
   - numpy==1.26.4
   - scikit-learn==1.5.2
