@@ -5,6 +5,8 @@ channels:
 dependencies:
   - python=3.11
   - pip
+  - setuptools
+  - wheel
   - pip:
       - mlflow==2.17.2
       - pandas==2.2
